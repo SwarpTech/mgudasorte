@@ -251,7 +251,10 @@
     if (aiCenter < ballY - 35) aiY += 6;
     else if (aiCenter > ballY + 35) aiY -= 6;
     aiY = Math.max(0, Math.min(canvas.height - paddleHeight, aiY));
-    if (ballY + ballRadius > canvas.height || ballY - ballRadius < 0) ballSpeedY *= -1;
+    if (ballY + ballRadius > canvas.height || ballY - ballRadius < 0) {
+  ballSpeedY *= -1;
+  ballY = Math.max(ballRadius + 1, Math.min(canvas.height - ballRadius - 1, ballY)); // Evita travamento na borda
+}
     if (ballX - ballRadius <= paddleWidth + 2 && ballY + ballRadius >= playerY && ballY - ballRadius <= playerY + paddleHeight) {
       const angle = ((ballY - (playerY + paddleHeight / 2)) / (paddleHeight / 2)) * Math.PI / 4;
       const speed = ballSpeedBase + rebounds * 0.4;
