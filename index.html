@@ -66,7 +66,7 @@
       width: 80%;
       max-width: 300px;
     }
-    .logo { width: 200px; margin-bottom: 15px; }
+    .logo { width: 80px; margin-bottom: 15px; }
     #mensagemFinal, #mensagemDerrota { font-size: 20px; margin-top: 20px; }
     #mensagemDerrota { color: red; }
     #cupomFinal {
@@ -100,11 +100,12 @@
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
 </head>
 <body>
+  <input id="playerNameInput" type="text" placeholder="Digite seu nome" style="margin-bottom: 10px; padding: 10px; font-size: 16px; border-radius: 8px; border: none; width: 80%; max-width: 300px;" />
   <button id="botaoStart" class="botao-central">START</button>
   <button id="botaoAvancar" class="botao-central">Avançar de Fase</button>
   <button id="botaoNovoJogo" class="botao-central">Novo Jogo</button>
 
-  <img src="logo-mgu1.png" alt="Logo MGU" class="logo">
+  <img src="logo-mgu.png" alt="Logo MGU" class="logo">
   <h1>MGU DA SORTE</h1>
   <p>Você já está concorrendo ao PS5! Complete a fase para ganhar um presente misterioso.</p>
   <p><strong>Missão:</strong> Rebata a bolinha 10 vezes para completar a fase!</p>
@@ -125,6 +126,7 @@
 
   <script>
 window.onload = function() {
+  let playerName = "";
     // === INÍCIO DO SCRIPT JAVASCRIPT COMPLETO ===
 // === CONFIG INICIAL E VARIÁVEIS ===
 const canvas = document.getElementById("gameCanvas");
@@ -153,7 +155,7 @@ let rebounds = 0, gameInterval, mouseMoveHandler, touchMoveHandler;
 let confetes = [], emFase2 = false, velocidadeExtra = 0;
 let recordRebatesValue = parseInt(localStorage.getItem('recordRebatesMGU')) || 0;
 let rebatesFase2 = 0;
-melhorRebate.textContent = recordRebatesValue;
+melhorRebate.textContent = recordRebatesValue + " (" + (localStorage.getItem('recordHolderNameMGU') || "-") + ")";
 
 // === EVENTOS ===
 botaoStart.addEventListener('click', startGame);
@@ -304,8 +306,19 @@ function fase2Game() {
     rebatesAtuais.textContent = rebatesFase2;
     if (rebatesFase2 > recordRebatesValue) {
       recordRebatesValue = rebatesFase2;
-      melhorRebate.textContent = recordRebatesValue;
-      localStorage.setItem('recordRebatesMGU', recordRebatesValue);
+      melhorRebate.textContent = recordRebatesValue + " (" + playerName + ")";
+
+      fetch("https://script.google.com/macros/s/AKfycbyE0E54ZLMZxpeSU4OxuSgGFIkjWGMJEp8h5Q21ErPCTe_avhWaE237rkPx6OaHZllx/exec", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          nome: playerName,
+          rebate: rebatesFase2
+        })
+      }).then(res => console.log("Enviado para Google Sheets"))
+        .catch(err => console.error("Erro ao enviar:", err));
     }
   } else if (ballX - ballRadius < 0) {
     fimDeJogo(false);
@@ -325,6 +338,13 @@ function fase2Game() {
 }
 
 function startGame() {
+  const nameInput = document.getElementById("playerNameInput");
+  playerName = nameInput.value.trim();
+  if (!playerName) {
+    alert("Por favor, digite seu nome antes de começar.");
+    return;
+  }
+  nameInput.style.display = "none";
   botaoStart.style.display = "none";
   canvas.style.cursor = 'none';
   emFase2 = false;
