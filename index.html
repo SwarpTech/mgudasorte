@@ -131,14 +131,17 @@ window.onload = function() {
   fetch("https://opensheet.elk.sh/1MJj_OiIX3yTOfsOeM_LcF9je15AmqNKjjZgdy3lxqMo/Sheet1")
     .then(res => res.json())
     .then(data => {
-      const sorted = data.sort((a, b) => Number(b.Recorde) - Number(a.Recorde)).slice(0, 10);
+      const sorted = data.filter(row => row.Nome && row.Recorde).sort((a, b) => Number(b.Recorde) - Number(a.Recorde)).slice(0, 10);
       const list = document.getElementById("rankingList");
+      list.innerHTML = "";
       sorted.forEach(row => {
         const li = document.createElement("li");
         li.textContent = `${row.Nome}: ${row.Recorde} rebatidas`;
         list.appendChild(li);
       });
       document.getElementById("ranking").style.display = "block";
+    })
+    .catch(error => console.error("Erro ao carregar ranking:", error));
     });
   // REMOVIDO: let playerName duplicado
     // === INÍCIO DO SCRIPT JAVASCRIPT COMPLETO ===
