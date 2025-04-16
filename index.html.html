@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MGU DA SORTE - Pong Game</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background-color: #25262C;
+      color: #fdd760;
+      font-family: 'Montserrat', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      height: 100vh;
+      text-align: center;
+      overflow: auto;
+      padding-top: 20px;
+    }
+    .game-container {
+      position: relative;
+      width: 800px;
+      height: 500px;
+      margin-bottom: 20px;
+    }
+    #gameCanvas, #confeteCanvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+    #gameCanvas {
+      border: 4px solid #fdd760;
+      background-color: #25262C;
+      z-index: 1;
+    }
+    #confeteCanvas {
+      pointer-events: none;
+      z-index: 2;
+    }
+    h1 { margin-bottom: 10px; }
+    p { margin-bottom: 10px; font-size: 18px; }
+    #contadorRebates, #contadorRebatesFase2, #recordRebates {
+      font-size: 18px;
+      margin-bottom: 15px;
+      background-color: #fdd760;
+      color: #25262C;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-weight: bold;
+      display: inline-block;
+    }
+    #contadorRebatesFase2, #recordRebates { display: none; background-color: #ff6b6b; }
+    button, #copyCupomBtn {
+      padding: 10px 20px;
+      background-color: #fdd760;
+      color: #25262C;
+      font-size: 16px;
+      font-weight: bold;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      display: none;
+      margin-top: 10px;
+      width: 80%;
+      max-width: 300px;
+    }
+    .logo { width: 80px; margin-bottom: 15px; }
+    #mensagemFinal, #mensagemDerrota { font-size: 20px; margin-top: 20px; }
+    #mensagemDerrota { color: red; }
+    #cupomFinal {
+      display: none;
+      font-size: 24px;
+      font-weight: bold;
+      margin-top: 10px;
+      background-color: #fdd760;
+      color: #25262C;
+      padding: 10px 20px;
+      border-radius: 10px;
+    }
+    .botao-central {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 999;
+      background-color: #fdd760;
+      color: #25262C;
+      font-weight: bold;
+      border: none;
+      border-radius: 8px;
+      padding: 12px 24px;
+      font-size: 18px;
+      cursor: pointer;
+    }
+    #botaoStart { display: block; }
+    #botaoAvancar, #botaoNovoJogo { display: none; }
+  </style>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <button id="botaoStart" class="botao-central">START</button>
+  <button id="botaoAvancar" class="botao-central">Avançar de Fase</button>
+  <button id="botaoNovoJogo" class="botao-central">Novo Jogo</button>
+
+  <img src="MGU icon.png" alt="Logo MGU" class="logo">
+  <h1>MGU DA SORTE</h1>
+  <p>Você já está concorrendo ao PS5! Complete a fase para ganhar um presente misterioso.</p>
+  <p><strong>Missão:</strong> Rebata a bolinha 10 vezes para completar a fase!</p>
+  <p id="contadorRebates">Rebates: 0 / 10</p>
+  <p id="contadorRebatesFase2">Rebates: <span id="rebatesAtuais">0</span></p>
+  <p id="recordRebates">Recorde: <span id="melhorRebate">0</span></p>
+
+  <div class="game-container" style="margin-bottom: 100px;">
+    <canvas id="gameCanvas" width="800" height="500"></canvas>
+    <canvas id="confeteCanvas" width="800" height="500"></canvas>
+  </div>
+
+  <p id="mensagemFinal" style="display:none; margin-top: 30px;">Parabéns! Você completou a fase! Use o cupom abaixo no site do MeuGameUsado 🏱</p>
+  <div id="cupomFinal">Cupom: <strong id="cupomCode">SORTEMGU</strong> <span style="cursor:pointer;">📋</span></div>
+
+  <p id="mensagemDerrota" style="display:none;">Você perdeu! Tente novamente para garantir seu cupom.</p>
+  <button id="botaoReiniciar">Tentar Novamente</button>
+
+  <script>
+window.onload = function() {
+    // === INÍCIO DO SCRIPT JAVASCRIPT COMPLETO ===
+// === CONFIG INICIAL E VARIÁVEIS ===
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+const confeteCanvas = document.getElementById("confeteCanvas");
+const confeteCtx = confeteCanvas.getContext("2d");
+const mensagemFinal = document.getElementById("mensagemFinal");
+const mensagemDerrota = document.getElementById("mensagemDerrota");
+const botaoReiniciar = document.getElementById("botaoReiniciar");
+const contadorRebates = document.getElementById("contadorRebates");
+const contadorRebatesFase2 = document.getElementById("contadorRebatesFase2");
+const rebatesAtuais = document.getElementById("rebatesAtuais");
+const recordRebates = document.getElementById("recordRebates");
+const melhorRebate = document.getElementById("melhorRebate");
+const cupomFinal = document.getElementById("cupomFinal");
+const cupomCode = document.getElementById("cupomCode");
+const botaoStart = document.getElementById("botaoStart");
+const botaoAvancar = document.getElementById("botaoAvancar");
+const botaoNovoJogo = document.getElementById("botaoNovoJogo");
+
+const paddleHeight = 100, paddleWidth = 40, ballRadius = 20, goalRebounds = 10;
+const ballSpeedBase = 5, aumentoVelocidade = 0.05;
+
+let playerY, aiY, ballX, ballY, ballSpeedX, ballSpeedY;
+let rebounds = 0, gameInterval, mouseMoveHandler, touchMoveHandler;
+let confetes = [], emFase2 = false, velocidadeExtra = 0;
+let recordRebatesValue = parseInt(localStorage.getItem('recordRebatesMGU')) || 0;
+let rebatesFase2 = 0;
+melhorRebate.textContent = recordRebatesValue;
+
+// === EVENTOS ===
+botaoStart.addEventListener('click', startGame);
+botaoAvancar.addEventListener('click', iniciarFase2);
+botaoNovoJogo.addEventListener('click', reiniciarFase2);
+botaoReiniciar.addEventListener('click', reiniciarJogo);
+document.querySelector('#cupomFinal span').addEventListener('click', copiarCupom);
+
+// === INICIALIZAÇÃO ===
+function initGame() {
+  playerY = canvas.height / 2 - paddleHeight / 2;
+  aiY = canvas.height / 2 - paddleHeight / 2;
+  ballX = canvas.width / 2;
+  ballY = canvas.height / 2;
+  velocidadeExtra = 0;
+  ballSpeedX = ballSpeedBase * (Math.random() > 0.5 ? 1 : -1);
+  ballSpeedY = 3 * (Math.random() > 0.5 ? 1 : -1);
+  rebounds = 0;
+  rebatesFase2 = 0;
+  rebatesAtuais.textContent = "0";
+  contadorRebates.textContent = `Rebates: ${rebounds} / ${goalRebounds}`;
+
+  contadorRebatesFase2.style.display = emFase2 ? "inline-block" : "none";
+  recordRebates.style.display = emFase2 ? "inline-block" : "none";
+  contadorRebates.style.display = emFase2 ? "none" : "inline-block";
+
+  mensagemFinal.style.display = "none";
+  mensagemDerrota.style.display = "none";
+  cupomFinal.style.display = "none";
+  botaoReiniciar.style.display = "none";
+  confetes = [];
+  confeteCtx.clearRect(0, 0, confeteCanvas.width, confeteCanvas.height);
+
+  if (gameInterval) clearInterval(gameInterval);
+  if (mouseMoveHandler) document.removeEventListener('mousemove', mouseMoveHandler);
+  if (touchMoveHandler) canvas.removeEventListener('touchmove', touchMoveHandler);
+
+  mouseMoveHandler = e => {
+    const rect = canvas.getBoundingClientRect();
+    playerY = e.clientY - rect.top - paddleHeight / 2;
+    playerY = Math.max(0, Math.min(canvas.height - paddleHeight, playerY));
+  };
+  touchMoveHandler = e => {
+    const touch = e.touches[0];
+    const rect = canvas.getBoundingClientRect();
+    playerY = touch.clientY - rect.top - paddleHeight / 2;
+    playerY = Math.max(0, Math.min(canvas.height - paddleHeight, playerY));
+  };
+
+  document.addEventListener('mousemove', mouseMoveHandler);
+  canvas.addEventListener('touchmove', touchMoveHandler);
+
+  draw();
+}
+
+// (continuação do script JavaScript)
+
+function update() {
+  ballX += ballSpeedX;
+  ballY += ballSpeedY;
+
+  let aiCenter = aiY + paddleHeight / 2;
+  if (aiCenter < ballY - 35) aiY += 6;
+  else if (aiCenter > ballY + 35) aiY -= 6;
+  aiY = Math.max(0, Math.min(canvas.height - paddleHeight, aiY));
+
+  if (ballY + ballRadius > canvas.height || ballY - ballRadius < 0) ballSpeedY *= -1;
+
+  if (
+    ballX - ballRadius <= paddleWidth + 2 &&
+    ballY + ballRadius >= playerY &&
+    ballY - ballRadius <= playerY + paddleHeight
+  ) {
+    const angle = ((ballY - (playerY + paddleHeight / 2)) / (paddleHeight / 2)) * Math.PI / 4;
+    const speed = ballSpeedBase + rebounds * 0.4;
+    ballSpeedX = speed * Math.cos(angle);
+    ballSpeedY = speed * Math.sin(angle);
+    rebounds++;
+    contadorRebates.textContent = `Rebates: ${rebounds} / ${goalRebounds}`;
+  } else if (ballX - ballRadius < 0) {
+    fimDeJogo(false);
+    return;
+  }
+
+  if (
+    ballX + ballRadius > canvas.width - paddleWidth &&
+    ballY + ballRadius >= aiY &&
+    ballY - ballRadius <= aiY + paddleHeight
+  ) {
+    ballSpeedX *= -1;
+  } else if (ballX + ballRadius > canvas.width) {
+    fimDeJogo(true);
+  }
+
+  if (rebounds >= goalRebounds && !emFase2) {
+    mensagemFinal.style.display = "block";
+    cupomFinal.style.display = "block";
+    botaoAvancar.style.display = 'block';
+    canvas.style.cursor = 'auto';
+    clearInterval(gameInterval);
+    document.removeEventListener('mousemove', mouseMoveHandler);
+    canvas.removeEventListener('touchmove', touchMoveHandler);
+    startConfete();
+  }
+}
+
+function drawRect(x, y, w, h, color) {
+  ctx.fillStyle = color;
+  ctx.fillRect(x, y, w, h);
+}
+function drawVerticalText(text, x, y, color = "#25262C") {
+  ctx.save();
+  ctx.translate(x + 12, y);
+  ctx.rotate(Math.PI / 2);
+  ctx.font = "bold 16px Montserrat";
+  ctx.fillStyle = color;
+  ctx.fillText(text, 0, 0);
+  ctx.restore();
+}
+function drawBall(x, y, radius, color) {
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.arc(x, y, radius, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.closePath();
+}
+function draw() {
+  drawRect(0, 0, canvas.width, canvas.height, "#25262C");
+  drawRect(0, playerY, paddleWidth, paddleHeight, "#fdd760");
+  drawVerticalText("VOCÊ", 0, playerY + 10);
+  drawRect(canvas.width - paddleWidth, aiY, paddleWidth, paddleHeight, "#fdd760");
+  drawBall(ballX, ballY, ballRadius, "#fdd760");
+}
+
+function fase2Game() {
+  velocidadeExtra += aumentoVelocidade;
+  ballX += ballSpeedX;
+  ballY += ballSpeedY;
+  aiY = ballY - paddleHeight / 2;
+  aiY = Math.max(0, Math.min(canvas.height - paddleHeight, aiY));
+  if (ballY + ballRadius > canvas.height || ballY - ballRadius < 0) ballSpeedY *= -1;
+  if (ballX - ballRadius <= paddleWidth + 2 && ballY + ballRadius >= playerY && ballY - ballRadius <= playerY + paddleHeight) {
+    const angle = ((ballY - (playerY + paddleHeight / 2)) / (paddleHeight / 2)) * Math.PI / 4;
+    const speed = ballSpeedBase + velocidadeExtra;
+    ballSpeedX = speed * Math.cos(angle);
+    ballSpeedY = speed * Math.sin(angle);
+    rebatesFase2++;
+    rebatesAtuais.textContent = rebatesFase2;
+    if (rebatesFase2 > recordRebatesValue) {
+      recordRebatesValue = rebatesFase2;
+      melhorRebate.textContent = recordRebatesValue;
+      localStorage.setItem('recordRebatesMGU', recordRebatesValue);
+    }
+  } else if (ballX - ballRadius < 0) {
+    fimDeJogo(false);
+    return;
+  }
+  if (ballX + ballRadius > canvas.width - paddleWidth && ballY + ballRadius >= aiY && ballY - ballRadius <= aiY + paddleHeight) {
+    const relativeIntersect = (aiY + (paddleHeight / 2)) - ballY;
+    const normalizedRelative = relativeIntersect / (paddleHeight / 2);
+    const bounceAngle = normalizedRelative * (Math.PI / 4);
+    ballSpeedX = -(ballSpeedBase + velocidadeExtra) * Math.cos(bounceAngle);
+    ballSpeedY = (ballSpeedBase + velocidadeExtra) * -Math.sin(bounceAngle);
+    ballX = canvas.width - paddleWidth - ballRadius - 1;
+  } else if (ballX + ballRadius > canvas.width) {
+    fimDeJogo(true);
+  }
+  draw();
+}
+
+function startGame() {
+  botaoStart.style.display = "none";
+  canvas.style.cursor = 'none';
+  emFase2 = false;
+  initGame();
+  gameInterval = setInterval(function () {
+    update();
+    draw();
+  }, 1000 / 60);
+}
+function iniciarFase2() {
+  botaoAvancar.style.display = 'none';
+  canvas.style.cursor = 'none';
+  emFase2 = true;
+  velocidadeExtra = 0;
+  mensagemFinal.style.display = 'none';
+  mensagemDerrota.style.display = 'none';
+  cupomFinal.style.display = 'none';
+  contadorRebatesFase2.style.display = "inline-block";
+  recordRebates.style.display = "inline-block";
+  contadorRebates.style.display = "none";
+  rebatesFase2 = 0;
+  rebatesAtuais.textContent = "0";
+  initGame();
+  gameInterval = setInterval(fase2Game, 1000 / 60);
+}
+function reiniciarFase2() {
+  botaoNovoJogo.style.display = 'none';
+  canvas.style.cursor = 'none';
+  emFase2 = true;
+  velocidadeExtra = 0;
+  initGame();
+  gameInterval = setInterval(fase2Game, 1000 / 60);
+}
+function reiniciarJogo() {
+  botaoStart.style.display = "none";
+  botaoReiniciar.style.display = "none";
+  canvas.style.cursor = 'none';
+  emFase2 = false;
+  initGame();
+  gameInterval = setInterval(drawGame, 1000 / 60);
+}
+function fimDeJogo(venceu) {
+  clearInterval(gameInterval);
+  document.removeEventListener('mousemove', mouseMoveHandler);
+  canvas.removeEventListener('touchmove', touchMoveHandler);
+  canvas.style.cursor = 'auto';
+  if (emFase2) {
+    if (venceu) {
+      mensagemFinal.textContent = `INCRÍVEL! Você venceu com ${rebatesFase2} rebatidas! 🏆`;
+      mensagemFinal.style.display = 'block';
+      startConfete();
+    } else {
+      mensagemDerrota.textContent = `Você fez ${rebatesFase2} rebatidas! Seu recorde: ${recordRebatesValue}`;
+      mensagemDerrota.style.display = 'block';
+    }
+    botaoNovoJogo.style.display = 'block';
+  } else {
+    if (venceu) {
+      mensagemFinal.style.display = "block";
+      cupomFinal.style.display = "block";
+      botaoAvancar.style.display = 'block';
+      startConfete();
+    } else {
+      mensagemDerrota.style.display = "block";
+      botaoStart.style.display = "block";
+      botaoReiniciar.style.display = "inline-block";
+    }
+  }
+}
+function copiarCupom() {
+  navigator.clipboard.writeText(cupomCode.textContent);
+  alert("Cupom copiado!");
+}
+function startConfete() {
+  for (let i = 0; i < 100; i++) {
+    confetes.push({
+      x: Math.random() * confeteCanvas.width,
+      y: Math.random() * -confeteCanvas.height,
+      r: Math.random() * 6 + 4,
+      d: Math.random() * 100,
+      color: `hsl(${Math.random() * 360}, 100%, 50%)`,
+      tilt: Math.random() * 10 - 5,
+      tiltAngle: 0,
+    });
+  }
+  requestAnimationFrame(updateConfete);
+}
+function updateConfete() {
+  confeteCtx.clearRect(0, 0, confeteCanvas.width, confeteCanvas.height);
+  for (let i = 0; i < confetes.length; i++) {
+    const c = confetes[i];
+    confeteCtx.beginPath();
+    confeteCtx.lineWidth = c.r / 2;
+    confeteCtx.strokeStyle = c.color;
+    confeteCtx.moveTo(c.x + c.tilt + c.r / 2, c.y);
+    confeteCtx.lineTo(c.x + c.tilt, c.y + c.tilt + c.r / 2);
+    confeteCtx.stroke();
+  }
+  moveConfete();
+  requestAnimationFrame(updateConfete);
+}
+function moveConfete() {
+  for (let i = 0; i < confetes.length; i++) {
+    const c = confetes[i];
+    c.y += Math.cos(c.d) + 3;
+    c.tiltAngle += 0.05;
+    c.tilt = Math.sin(c.tiltAngle) * 15;
+    if (c.y > confeteCanvas.height) {
+      c.y = -10;
+      c.x = Math.random() * confeteCanvas.width;
+    }
+  }
+}
+botaoStart.style.display = "block";
+};
+</script>
+</body>
+</html>
