@@ -296,11 +296,24 @@
       rebatesFase2++;
       rebatesAtuais.textContent = rebatesFase2;
       if (rebatesFase2 > recordRebatesValue) {
-        recordRebatesValue = rebatesFase2;
-        melhorRebate.textContent = recordRebatesValue + " (" + playerName + ")";
-        localStorage.setItem('recordRebatesMGU', recordRebatesValue);
-        localStorage.setItem('recordHolderNameMGU', playerName);
-      }
+  recordRebatesValue = rebatesFase2;
+  melhorRebate.textContent = recordRebatesValue + " (" + playerName + ")";
+  localStorage.setItem('recordRebatesMGU', recordRebatesValue);
+  localStorage.setItem('recordHolderNameMGU', playerName);
+
+  // Enviar recorde ao Google Sheets
+  fetch("https://script.google.com/macros/s/AKfycbzhR_IHsJeWCSgKoTwmPtEjjQZYZLwbfE1T6N0i07Bl-8pXhG_gKw_lJ7ZILDhHfrOz/exec", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      nome: playerName,
+      rebate: rebatesFase2
+    })
+  }).then(res => console.log("Recorde enviado ao Google Sheets"))
+    .catch(err => console.error("Erro ao enviar recorde:", err));
+}
     } else if (ballX - ballRadius < 0) {
       fimDeJogo(false);
       return;
