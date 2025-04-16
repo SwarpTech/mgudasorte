@@ -175,7 +175,7 @@
   <!-- SCRIPTS DO JOGO -->
   <script>
     // Configurações do jogo
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzhR_IHsJeWCSgKoTwmPtEjjQZYZLwbfE1T6N0i07Bl-8pXhG_gKw_lJ7ZILDhHfrOz/exec";
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyMr-Qme-jgYqvLHFvIeh-UA_FpIXwRXanuYFV6PfBL9W5zjkBNULTkIc90zvoSEgun/exec";
     let fimDeJogoAtivo = false;
     let gameInterval = null;
     let confeteInterval = null;
@@ -590,16 +590,15 @@
 
       // Funções de integração com Google Sheets
       function carregarRanking() {
-        // Primeiro tenta carregar do Google Sheets
         fetch(`${GOOGLE_SCRIPT_URL}?action=getRanking`)
           .then(response => {
             if (!response.ok) throw new Error('Erro na rede');
             return response.json();
           })
           .then(data => {
+            console.log("Dados recebidos:", data);
             if (data && data.length > 0) {
               atualizarRankingUI(data);
-              // Atualiza recorde local se necessário
               if (data[0].rebate > recordRebatesValue) {
                 recordRebatesValue = data[0].rebate;
                 recordHolderName = data[0].nome;
@@ -637,7 +636,6 @@
         })
         .catch(err => {
           console.error("Erro ao enviar recorde:", err);
-          // Não mostra erro para o usuário para não interromper o jogo
         });
       }
 
@@ -659,11 +657,11 @@
 
       function mostrarDadosExemplo() {
         const fakeData = [
-          { nome: "Jogador1", rebate: 25 },
-          { nome: "Jogador2", rebate: 20 },
-          { nome: "Jogador3", rebate: 18 },
-          { nome: "Jogador4", rebate: 15 },
-          { nome: "Jogador5", rebate: 12 }
+          { nome: "Sandro", rebate: 34 },
+          { nome: "João", rebate: 28 },
+          { nome: "Maria", rebate: 23 },
+          { nome: "Luiz", rebate: 20 },
+          { nome: "Ana", rebate: 18 }
         ];
         
         rankingList.innerHTML = `
