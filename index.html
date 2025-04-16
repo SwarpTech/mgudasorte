@@ -99,7 +99,7 @@
       cursor: pointer;
     }
     #botaoStart { display: block; }
-    #botaoAvancar, #botaoNovoJogo { display: none; }
+    #botaoAvancar, #botaoNovoJogo, #botaoReiniciar { display: none; }
     #ranking {
       position: fixed;
       left: 20px;
@@ -147,6 +147,7 @@
   <button id="botaoStart" class="botao-central">START</button>
   <button id="botaoAvancar" class="botao-central">Avançar de Fase</button>
   <button id="botaoNovoJogo" class="botao-central">Novo Jogo</button>
+  <button id="botaoReiniciar" class="botao-central">Tentar Novamente</button>
 
   <img src="logo-mgu1.png" alt="Logo MGU" class="logo">
   <h1>MGU DA SORTE</h1>
@@ -164,8 +165,7 @@
   <p id="mensagemFinal" style="display:none; margin-top: 30px;">Parabéns! Você completou a fase! Use o cupom abaixo no site do MeuGameUsado 🍱</p>
   <div id="cupomFinal">Cupom: <strong id="cupomCode">SORTEMGU</strong> <span style="cursor:pointer;">📋</span></div>
 
-  <p id="mensagemDerrota" style="display:none;">Você perdeu! Tente novamente para garantir seu cupom.</p>
-  <button id="botaoReiniciar" style="display:none;">Tentar Novamente</button>
+  <p id="mensagemDerrota" style="display:none;"></p>
 
   <div id="ranking">
     <h2>🏆 Ranking dos Jogadores</h2>
@@ -212,6 +212,7 @@
       let recordRebatesValue = parseInt(localStorage.getItem('recordRebatesMGU')) || 0;
       let rebatesFase2 = 0;
       let recordHolderName = localStorage.getItem('recordHolderNameMGU') || "-";
+      let top3Ranking = [];
 
       // Inicialização
       melhorRebate.textContent = recordRebatesValue + " (" + recordHolderName + ")";
@@ -367,7 +368,13 @@
             melhorRebate.textContent = recordRebatesValue + " (" + recordHolderName + ")";
             localStorage.setItem('recordRebatesMGU', recordRebatesValue);
             localStorage.setItem('recordHolderNameMGU', recordHolderName);
-            enviarRecorde(playerName, rebatesFase2);
+            
+            // Verifica se entrou no top 3
+            if (top3Ranking.length < 3 || rebatesFase2 > top3Ranking[2].rebate) {
+              enviarRecorde(playerName, rebatesFase2, true);
+            } else {
+              enviarRecorde(playerName, rebatesFase2, false);
+            }
           }
         } else if (ballX - ballRadius < 0) {
           fimDeJogo(false);
@@ -598,13 +605,13 @@
           .then(data => {
             console.log("Dados recebidos:", data);
             if (data && data.length > 0) {
+              top3Ranking = data.slice(0, 3); // Guarda os 3 primeiros para verificação
               atualizarRankingUI(data);
-              if (data[0].rebate > recordRebatesValue) {
+              // Atualiza o recorde exibido com o 1º lugar da planilha
+              if (data[0] && data[0].rebate) {
                 recordRebatesValue = data[0].rebate;
                 recordHolderName = data[0].nome;
                 melhorRebate.textContent = recordRebatesValue + " (" + recordHolderName + ")";
-                localStorage.setItem('recordRebatesMGU', recordRebatesValue);
-                localStorage.setItem('recordHolderNameMGU', recordHolderName);
               }
             } else {
               mostrarDadosExemplo();
@@ -616,11 +623,12 @@
           });
       }
 
-      function enviarRecorde(nome, rebate) {
+      function enviarRecorde(nome, rebate, isTop3) {
         const formData = new FormData();
         formData.append('action', 'saveRecord');
         formData.append('nome', nome);
         formData.append('rebate', rebate);
+        formData.append('isTop3', isTop3);
 
         fetch(GOOGLE_SCRIPT_URL, {
           method: "POST",
