@@ -175,7 +175,7 @@
   <!-- SCRIPTS DO JOGO -->
   <script>
     // Configurações do jogo
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyMr-Qme-jgYqvLHFvIeh-UA_FpIXwRXanuYFV6PfBL9W5zjkBNULTkIc90zvoSEgun/exec";
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyj9jw7Nz4Nfax7JHe6Sl6wV3XX9PFB9VudBzHnbJruTQa_FB_sGOi0k6TnbZkpG6g/exec";
     let fimDeJogoAtivo = false;
     let gameInterval = null;
     let confeteInterval = null;
@@ -370,10 +370,11 @@
             localStorage.setItem('recordHolderNameMGU', recordHolderName);
             
             // Verifica se entrou no top 3
-            if (top3Ranking.length < 3 || rebatesFase2 > top3Ranking[2].rebate) {
-              enviarRecorde(playerName, rebatesFase2, true);
-            } else {
-              enviarRecorde(playerName, rebatesFase2, false);
+            const isTop3 = top3Ranking.length < 3 || rebatesFase2 > top3Ranking[top3Ranking.length - 1].rebate;
+            enviarRecorde(playerName, rebatesFase2, isTop3);
+            
+            if (isTop3) {
+              mostrarMensagemTop3(playerName, rebatesFase2);
             }
           }
         } else if (ballX - ballRadius < 0) {
@@ -386,6 +387,39 @@
           fimDeJogo(true);
         }
         draw();
+      }
+
+      function mostrarMensagemTop3(nome, rebates) {
+        const mensagem = document.createElement('div');
+        mensagem.style.position = 'fixed';
+        mensagem.style.top = '50%';
+        mensagem.style.left = '50%';
+        mensagem.style.transform = 'translate(-50%, -50%)';
+        mensagem.style.backgroundColor = '#fdd760';
+        mensagem.style.color = '#25262C';
+        mensagem.style.padding = '20px';
+        mensagem.style.borderRadius = '10px';
+        mensagem.style.zIndex = '1000';
+        mensagem.style.textAlign = 'center';
+        mensagem.style.boxShadow = '0 0 20px rgba(0,0,0,0.5)';
+        mensagem.innerHTML = `
+          <h2 style="margin-bottom: 10px;">🎉 PARABÉNS ${nome.toUpperCase()}! 🎉</h2>
+          <p style="font-size: 18px; margin-bottom: 15px;">Você entrou para o TOP 3 do ranking!</p>
+          <p style="font-size: 24px; font-weight: bold;">${rebates} REBATIDAS</p>
+          <button id="fecharMensagem" style="margin-top: 15px; padding: 8px 16px; background-color: #25262C; color: #fdd760; border: none; border-radius: 5px; cursor: pointer;">Fechar</button>
+        `;
+        
+        document.body.appendChild(mensagem);
+        
+        document.getElementById('fecharMensagem').addEventListener('click', function() {
+          document.body.removeChild(mensagem);
+        });
+        
+        setTimeout(() => {
+          if (document.body.contains(mensagem)) {
+            document.body.removeChild(mensagem);
+          }
+        }, 5000);
       }
 
       function startGame() {
@@ -624,26 +658,51 @@
       }
 
       function enviarRecorde(nome, rebate, isTop3) {
-        const formData = new FormData();
-        formData.append('action', 'saveRecord');
-        formData.append('nome', nome);
-        formData.append('rebate', rebate);
-        formData.append('isTop3', isTop3);
+        const params = new URLSearchParams();
+        params.append('nome', nome);
+        params.append('rebate', rebate);
+        params.append('isTop3', isTop3);
+        params.append('action', 'saveRecord');
 
-        fetch(GOOGLE_SCRIPT_URL, {
-          method: "POST",
-          body: formData
+        // Primeiro tenta como GET
+        fetch(`${GOOGLE_SCRIPT_URL}?${params.toString()}`, {
+          method: "GET",
+          redirect: "follow"
         })
         .then(response => {
-          if (!response.ok) throw new Error('Erro ao enviar');
+          if (!response.ok) throw new Error('Erro na rede');
           return response.json();
         })
         .then(data => {
-          console.log("Recorde enviado:", data);
+          console.log("Recorde enviado com sucesso:", data);
+          carregarRanking(); // Atualiza o ranking após enviar
+        })
+        .catch(err => {
+          console.error("Erro ao enviar recorde (GET):", err);
+          // Se GET falhar, tenta como POST
+          enviarComoPost(nome, rebate, isTop3);
+        });
+      }
+
+      function enviarComoPost(nome, rebate, isTop3) {
+        const formData = new FormData();
+        formData.append('nome', nome);
+        formData.append('rebate', rebate);
+        formData.append('isTop3', isTop3);
+        formData.append('action', 'saveRecord');
+
+        fetch(GOOGLE_SCRIPT_URL, {
+          method: "POST",
+          body: formData,
+          redirect: "follow"
+        })
+        .then(response => response.json())
+        .then(data => {
+          console.log("Recorde enviado via POST:", data);
           carregarRanking();
         })
         .catch(err => {
-          console.error("Erro ao enviar recorde:", err);
+          console.error("Erro ao enviar via POST:", err);
         });
       }
 
