@@ -314,7 +314,10 @@
       nome: playerName,
       rebate: rebatesFase2
     })
-  }).then(res => console.log("Recorde enviado ao Google Sheets"))
+  }).then(res => {
+    console.log("Recorde enviado ao Google Sheets");
+    atualizarRanking();
+  })
     .catch(err => console.error("Erro ao enviar recorde:", err));
 }
     } else if (ballX - ballRadius < 0) {
@@ -403,6 +406,23 @@
       } else {
         mensagemDerrota.style.display = "block";
         botaoStart.style.display = "block";
+
+  function atualizarRanking() {
+    fetch("https://opensheet.elk.sh/1MJj_OiIX3yTOfsOeM_LcF9je15AmqNKjjZgdy3lxqMo/Sheet1")
+      .then(res => res.json())
+      .then(data => {
+        const sorted = data.filter(row => row.Nome && row.Recorde).sort((a, b) => Number(b.Recorde) - Number(a.Recorde)).slice(0, 10);
+        const list = document.getElementById("rankingList");
+        list.innerHTML = "";
+        sorted.forEach(row => {
+          const li = document.createElement("li");
+          li.textContent = `${row.Nome}: ${row.Recorde} rebatidas`;
+          list.appendChild(li);
+        });
+        document.getElementById("ranking").style.display = "block";
+      })
+      .catch(error => console.error("Erro ao atualizar ranking:", error));
+  }
         botaoReiniciar.style.display = "inline-block";
       }
     }
