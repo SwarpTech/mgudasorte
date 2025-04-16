@@ -233,6 +233,7 @@
       // Variáveis do jogo
       const paddleHeight = 100, paddleWidth = 40, ballRadius = 20, goalRebounds = 10;
       const ballSpeedBase = 5, aumentoVelocidade = 0.05;
+      let dificuldadeIA = 6; // Velocidade base da IA
       let playerName = "";
       let playerY, aiY, ballX, ballY, ballSpeedX, ballSpeedY;
       let rebounds = 0, mouseMoveHandler, touchMoveHandler;
@@ -338,16 +339,19 @@
       }
 
       function update() {
-        // Aumenta a velocidade progressivamente em todas as fases
         velocidadeExtra += aumentoVelocidade;
+        
+        // Aumenta a dificuldade da IA conforme a velocidade aumenta
+        dificuldadeIA = 6 + (velocidadeExtra * 2);
+        dificuldadeIA = Math.min(dificuldadeIA, 12); // Limite máximo de dificuldade
         
         ballX += ballSpeedX;
         ballY += ballSpeedY;
         
-        // IA do adversário - mais desafiador na fase 1 também
+        // IA ajustada - agora escala com a velocidade
         let aiCenter = aiY + paddleHeight / 2;
-        if (aiCenter < ballY - 35) aiY += 6;
-        else if (aiCenter > ballY + 35) aiY -= 6;
+        if (aiCenter < ballY - 35) aiY += dificuldadeIA * 0.5;
+        else if (aiCenter > ballY + 35) aiY -= dificuldadeIA * 0.5;
         aiY = Math.max(0, Math.min(canvas.height - paddleHeight, aiY));
         
         if (ballY + ballRadius > canvas.height || ballY - ballRadius < 0) {
