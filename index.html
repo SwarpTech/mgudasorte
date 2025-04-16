@@ -203,7 +203,7 @@
   <!-- SCRIPTS DO JOGO -->
   <script>
     // Configurações do jogo
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw5t4hzA-66vvYPHDzklvbrNO7nOYAbGx9uYrguoVjKll6wclU3DBo3TEZxSm5lpeJp/exec";
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw3LQNxqH8cQr0Ed0y6ocNw6TwmLULDn3-g_oNfk_Ri-bgEFWHnZvywHadGbhdKP0cf/exec";
     let fimDeJogoAtivo = false;
     let gameInterval = null;
     let confeteInterval = null;
@@ -338,19 +338,26 @@
       }
 
       function update() {
+        // Aumenta a velocidade progressivamente em todas as fases
+        velocidadeExtra += aumentoVelocidade;
+        
         ballX += ballSpeedX;
         ballY += ballSpeedY;
+        
+        // IA do adversário - mais desafiador na fase 1 também
         let aiCenter = aiY + paddleHeight / 2;
         if (aiCenter < ballY - 35) aiY += 6;
         else if (aiCenter > ballY + 35) aiY -= 6;
         aiY = Math.max(0, Math.min(canvas.height - paddleHeight, aiY));
+        
         if (ballY + ballRadius > canvas.height || ballY - ballRadius < 0) {
           ballSpeedY *= -1;
           ballY = Math.max(ballRadius + 1, Math.min(canvas.height - ballRadius - 1, ballY));
         }
+        
         if (ballX - ballRadius <= paddleWidth + 2 && ballY + ballRadius >= playerY && ballY - ballRadius <= playerY + paddleHeight) {
           const angle = ((ballY - (playerY + paddleHeight / 2)) / (paddleHeight / 2)) * Math.PI / 4;
-          const speed = ballSpeedBase + rebounds * 0.4;
+          const speed = ballSpeedBase + velocidadeExtra;
           ballSpeedX = speed * Math.cos(angle);
           ballSpeedY = speed * Math.sin(angle);
           rebounds++;
@@ -359,28 +366,35 @@
           fimDeJogo(false);
           return;
         }
+        
         if (ballX + ballRadius > canvas.width - paddleWidth && ballY + ballRadius >= aiY && ballY - ballRadius <= aiY + paddleHeight) {
           ballSpeedX *= -1;
         } else if (ballX + ballRadius > canvas.width) {
           fimDeJogo(true);
         }
+        
         if (rebounds >= goalRebounds && !emFase2) {
           fimDeJogo(true);
         }
+        
         draw();
       }
 
       function fase2Game() {
         if (!emFase2) return;
-        velocidadeExtra += aumentoVelocidade;
+        
         ballX += ballSpeedX;
         ballY += ballSpeedY;
+        
+        // Na fase 2, a IA é perfeita (segue exatamente a bola)
         aiY = ballY - paddleHeight / 2;
         aiY = Math.max(0, Math.min(canvas.height - paddleHeight, aiY));
+        
         if (ballY + ballRadius > canvas.height || ballY - ballRadius < 0) {
           ballSpeedY *= -1;
           ballY = Math.max(ballRadius + 1, Math.min(canvas.height - ballRadius - 1, ballY));
         }
+        
         if (ballX - ballRadius <= paddleWidth + 2 && ballY + ballRadius >= playerY && ballY - ballRadius <= playerY + paddleHeight) {
           const angle = ((ballY - (playerY + paddleHeight / 2)) / (paddleHeight / 2)) * Math.PI / 4;
           const speed = ballSpeedBase + velocidadeExtra;
@@ -400,11 +414,13 @@
           fimDeJogo(false);
           return;
         }
+        
         if (ballX + ballRadius > canvas.width - paddleWidth && ballY + ballRadius >= aiY && ballY - ballRadius <= aiY + paddleHeight) {
           ballSpeedX *= -1;
         } else if (ballX + ballRadius > canvas.width) {
           fimDeJogo(true);
         }
+        
         draw();
       }
 
@@ -425,6 +441,7 @@
         botaoStart.style.display = "none";
         canvas.style.cursor = 'none';
         emFase2 = false;
+        velocidadeExtra = 0; // Reinicia a velocidade extra
         initGame();
         
         function gameLoopFase1() {
@@ -499,6 +516,7 @@
         botaoNovoJogo.style.display = "none";
         canvas.style.cursor = 'none';
         emFase2 = false;
+        velocidadeExtra = 0; // Reinicia a velocidade extra
         initGame();
         
         function gameLoopFase1() {
