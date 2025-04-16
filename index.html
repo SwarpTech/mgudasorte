@@ -128,14 +128,15 @@
   <p id="mensagemDerrota" style="display:none;">Você perdeu! Tente novamente para garantir seu cupom.</p>
   <button id="botaoReiniciar">Tentar Novamente</button>
 
-  <div id="ranking" style="position: fixed; left: 20px; top: 20px; background: rgba(0,0,0,0.6); padding: 15px; border-radius: 8px; max-height: 400px; overflow-y: auto; color: #fdd760; font-size: 14px; font-family: 'Montserrat', sans-serif; display: none;">
+  <div id="ranking" style="position: fixed; left: 20px; top: 20px; background: rgba(0,0,0,0.6); padding: 15px; border-radius: 8px; max-height: 400px; overflow-y: auto; color: #fdd760; font-size: 14px; font-family: 'Montserrat', sans-serif; z-index: 9999;">
     <h3 style="margin-bottom: 10px; font-size: 16px;">🏆 Top Jogadores</h3>
-    <ul id="rankingList" style="list-style: none; padding: 0; margin: 0;"></ul>
+    <ul id="rankingList" style="list-style: none; padding: 0; margin: 0; color: #fdd760; font-size: 14px; font-family: 'Montserrat', sans-serif; display: block; background-color: rgba(255, 255, 255, 0.05); padding: 8px; border-radius: 4px; min-height: 20px;"></ul>
   </div>
 
   <!-- SCRIPTS DO JOGO -->
   <script>
-    document.addEventListener("DOMContentLoaded", function () {
+    let fimDeJogoAtivo = false;
+window.onload = function () {
   let playerName = "";
 
   const canvas = document.getElementById("gameCanvas");
@@ -194,7 +195,10 @@
     confetes = [];
     confeteCtx.clearRect(0, 0, confeteCanvas.width, confeteCanvas.height);
 
-    if (gameInterval) clearInterval(gameInterval);
+    if (gameInterval) {
+      cancelAnimationFrame(gameInterval);
+      gameInterval = null;
+    }
     if (mouseMoveHandler) document.removeEventListener('mousemove', mouseMoveHandler);
     if (touchMoveHandler) canvas.removeEventListener('touchmove', touchMoveHandler);
 
@@ -210,8 +214,8 @@
       playerY = Math.max(0, Math.min(canvas.height - paddleHeight, playerY));
     };
 
-    document.addEventListener('mousemove', mouseMoveHandler);
-    canvas.addEventListener('touchmove', touchMoveHandler);
+    if (!fimDeJogoAtivo) document.addEventListener('mousemove', mouseMoveHandler);
+    if (!fimDeJogoAtivo) canvas.addEventListener('touchmove', touchMoveHandler);
 
     draw();
   }
@@ -285,18 +289,23 @@
   }
 
   function fase2Game() {
+    if (!emFase2) return;
     velocidadeExtra += aumentoVelocidade;
     ballX += ballSpeedX;
     ballY += ballSpeedY;
     aiY = ballY - paddleHeight / 2;
     aiY = Math.max(0, Math.min(canvas.height - paddleHeight, aiY));
-    if (ballY + ballRadius > canvas.height || ballY - ballRadius < 0) ballSpeedY *= -1;
+    if (ballY + ballRadius > canvas.height || ballY - ballRadius < 0) {
+  ballSpeedY *= -1;
+  ballY = Math.max(ballRadius + 1, Math.min(canvas.height - ballRadius - 1, ballY));
+}
     if (ballX - ballRadius <= paddleWidth + 2 && ballY + ballRadius >= playerY && ballY - ballRadius <= playerY + paddleHeight) {
       const angle = ((ballY - (playerY + paddleHeight / 2)) / (paddleHeight / 2)) * Math.PI / 4;
       const speed = ballSpeedBase + velocidadeExtra;
       ballSpeedX = speed * Math.cos(angle);
       ballSpeedY = speed * Math.sin(angle);
       rebatesFase2++;
+  if (rebatesFase2 > 9999) rebatesFase2 = 9999;
       rebatesAtuais.textContent = rebatesFase2;
       if (rebatesFase2 > recordRebatesValue) {
   recordRebatesValue = rebatesFase2;
@@ -333,6 +342,11 @@
   }
 
   function startGame() {
+    if (gameInterval) {
+      cancelAnimationFrame(gameInterval);
+      gameInterval = null;
+    }
+    fimDeJogoAtivo = false;
     const nameInput = document.getElementById("playerNameInput");
     playerName = nameInput.value.trim();
     if (!playerName) {
@@ -344,10 +358,21 @@
     canvas.style.cursor = 'none';
     emFase2 = false;
     initGame();
-    gameInterval = setInterval(update, 1000 / 60);
+    function gameLoopFase1() {
+  if (fimDeJogoAtivo) return;
+  update();
+  draw();
+  gameInterval = requestAnimationFrame(gameLoopFase1);
+}
+gameLoopFase1();
   }
 
   function iniciarFase2() {
+    if (gameInterval) {
+      cancelAnimationFrame(gameInterval);
+      gameInterval = null;
+    }
+    fimDeJogoAtivo = false;
     botaoAvancar.style.display = 'none';
     canvas.style.cursor = 'none';
     emFase2 = true;
@@ -361,33 +386,65 @@
     rebatesFase2 = 0;
     rebatesAtuais.textContent = "0";
     initGame();
-    gameInterval = setInterval(fase2Game, 1000 / 60);
+    function gameLoopFase2() {
+      if (!emFase2) return;
+      fase2Game();
+      gameInterval = requestAnimationFrame(gameLoopFase2);
+    }
+    gameLoopFase2();
   }
 
   function reiniciarFase2() {
+    if (gameInterval) {
+      cancelAnimationFrame(gameInterval);
+      gameInterval = null;
+    }
+    fimDeJogoAtivo = false;
     botaoNovoJogo.style.display = 'none';
     canvas.style.cursor = 'none';
     emFase2 = true;
     velocidadeExtra = 0;
     initGame();
-    gameInterval = setInterval(fase2Game, 1000 / 60);
+    function gameLoopFase2() {
+  fase2Game();
+  gameInterval = requestAnimationFrame(gameLoopFase2);
+}
+gameLoopFase2();
   }
 
   function reiniciarJogo() {
+    if (gameInterval) {
+      cancelAnimationFrame(gameInterval);
+      gameInterval = null;
+    }
+    fimDeJogoAtivo = false;
     botaoStart.style.display = "none";
     botaoReiniciar.style.display = "none";
     canvas.style.cursor = 'none';
     emFase2 = false;
     initGame();
-    gameInterval = setInterval(update, 1000 / 60);
+    function gameLoopFase1() {
+      if (fimDeJogoAtivo) return;
+  update();
+  draw();
+  gameInterval = requestAnimationFrame(gameLoopFase1);
+}
+gameLoopFase1();
   }
 
   function fimDeJogo(venceu) {
-    clearInterval(gameInterval);
+    fimDeJogoAtivo = true;
+    if (gameInterval) {
+      cancelAnimationFrame(gameInterval);
+      gameInterval = null;
+    }
     document.removeEventListener('mousemove', mouseMoveHandler);
     canvas.removeEventListener('touchmove', touchMoveHandler);
     canvas.style.cursor = 'auto';
-    if (emFase2) {
+    draw();
+    const estavaNaFase2 = emFase2;
+    emFase2 = false;
+    if (estavaNaFase2) {
       if (venceu) {
         mensagemFinal.textContent = `INCRÍVEL! Você venceu com ${rebatesFase2} rebatidas! 🏆`;
         mensagemFinal.style.display = 'block';
@@ -405,33 +462,55 @@
         startConfete();
       } else {
         mensagemDerrota.style.display = "block";
-        atualizarRanking();
-  botaoStart.style.display = "block";
-        botaoReiniciar.style.display = "inline-block";
+        botaoReiniciar.classList.add("botao-central");
+        botaoReiniciar.style.display = "block";
       }
     }
   }
 
   function atualizarRanking() {
-    fetch("https://opensheet.elk.sh/1MJj_OiIX3yTOfsOeM_LcF9je15AmqNKjjZgdy3lxqMo/Sheet1")
-      .then(res => res.json())
-      .then(data => {
-        const sorted = data.filter(row => row.Nome && row.Recorde).sort((a, b) => Number(b.Recorde) - Number(a.Recorde)).slice(0, 10);
-        const list = document.getElementById("rankingList");
-        list.innerHTML = "";
-        sorted.forEach((row, index) => {
-          const li = document.createElement("li");
-          const destaque = index === 0 ? " 🔥" : "";
-          li.textContent = `${row.Nome}: ${row.Recorde} rebatidas${destaque}`;
-          list.appendChild(li);
-        });
-        document.getElementById("ranking").style.display = "block";
-      })
-      .catch(error => console.error("Erro ao carregar ranking:", error));
+  console.log("Ranking sendo atualizado...");
+  const fakeData = [
+    { Nome: "Sandro", Recorde: 34 },
+    { Nome: "João", Recorde: 28 },
+    { Nome: "Maria", Recorde: 23 },
+    { Nome: "Luiz", Recorde: 20 },
+    { Nome: "Ana", Recorde: 18 },
+    { Nome: "Carlos", Recorde: 16 },
+    { Nome: "Fernanda", Recorde: 15 },
+    { Nome: "Bruno", Recorde: 14 },
+    { Nome: "Juliana", Recorde: 13 },
+    { Nome: "Pedro", Recorde: 12 }
+  ];
+
+  const sorted = fakeData
+    .filter(row => row.Nome && !isNaN(row.Recorde))
+    .sort((a, b) => b.Recorde - a.Recorde)
+    .slice(0, 10);
+  console.log("Jogadores encontrados:", sorted);
+
+  const list = document.getElementById("rankingList");
+  list.innerHTML = "";
+
+  if (sorted.length === 0) {
+    const li = document.createElement("li");
+    li.textContent = "Nenhum jogador registrado ainda.";
+    
+      list.appendChild(li);
+  } else {
+    sorted.forEach((row, index) => {
+      const li = document.createElement("li");
+      const destaque = index === 0 ? " 🔥" : "";
+      li.textContent = `${index + 1}º ${index === 0 ? 'Campeão ' : ''}${row.Nome}: ${row.Recorde} rebatidas${destaque}`;
+      list.appendChild(li);
+    });
   }
-    atualizarRanking();
+
+  document.getElementById("ranking").style.display = "block";
+}
+  atualizarRanking();
   botaoStart.style.display = "block";
-});
+};
   </script>
 </body>
 </html>
