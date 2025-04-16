@@ -409,82 +409,15 @@
 
   function atualizarRanking() {
     fetch("https://opensheet.elk.sh/1MJj_OiIX3yTOfsOeM_LcF9je15AmqNKjjZgdy3lxqMo/Sheet1")
-      .then(res => res.json())
-      .then(data => {
-        const sorted = data.filter(row => row.Nome && row.Recorde).sort((a, b) => Number(b.Recorde) - Number(a.Recorde)).slice(0, 10);
-        const list = document.getElementById("rankingList");
-        list.innerHTML = "";
-        sorted.forEach(row => {
-          const li = document.createElement("li");
-          li.textContent = `${row.Nome}: ${row.Recorde} rebatidas`;
-          list.appendChild(li);
-        });
-        document.getElementById("ranking").style.display = "block";
-      })
-      .catch(error => console.error("Erro ao atualizar ranking:", error));
-  }
-        botaoReiniciar.style.display = "inline-block";
-      }
-    }
-  }
-
-  function copiarCupom() {
-    navigator.clipboard.writeText(cupomCode.textContent);
-    alert("Cupom copiado!");
-  }
-
-  function startConfete() {
-    for (let i = 0; i < 100; i++) {
-      confetes.push({
-        x: Math.random() * confeteCanvas.width,
-        y: Math.random() * -confeteCanvas.height,
-        r: Math.random() * 6 + 4,
-        d: Math.random() * 100,
-        color: `hsl(${Math.random() * 360}, 100%, 50%)`,
-        tilt: Math.random() * 10 - 5,
-        tiltAngle: 0,
-      });
-    }
-    requestAnimationFrame(updateConfete);
-  }
-
-  function updateConfete() {
-    confeteCtx.clearRect(0, 0, confeteCanvas.width, confeteCanvas.height);
-    for (let i = 0; i < confetes.length; i++) {
-      const c = confetes[i];
-      confeteCtx.beginPath();
-      confeteCtx.lineWidth = c.r / 2;
-      confeteCtx.strokeStyle = c.color;
-      confeteCtx.moveTo(c.x + c.tilt + c.r / 2, c.y);
-      confeteCtx.lineTo(c.x + c.tilt, c.y + c.tilt + c.r / 2);
-      confeteCtx.stroke();
-    }
-    moveConfete();
-    requestAnimationFrame(updateConfete);
-  }
-
-  function moveConfete() {
-    for (let i = 0; i < confetes.length; i++) {
-      const c = confetes[i];
-      c.y += Math.cos(c.d) + 3;
-      c.tiltAngle += 0.05;
-      c.tilt = Math.sin(c.tiltAngle) * 15;
-      if (c.y > confeteCanvas.height) {
-        c.y = -10;
-        c.x = Math.random() * confeteCanvas.width;
-      }
-    }
-  }
-
-  fetch("https://opensheet.elk.sh/1MJj_OiIX3yTOfsOeM_LcF9je15AmqNKjjZgdy3lxqMo/Sheet1")
     .then(res => res.json())
     .then(data => {
       const sorted = data.filter(row => row.Nome && row.Recorde).sort((a, b) => Number(b.Recorde) - Number(a.Recorde)).slice(0, 10);
       const list = document.getElementById("rankingList");
       list.innerHTML = "";
-      sorted.forEach(row => {
+      sorted.forEach((row, index) => {
         const li = document.createElement("li");
-        li.textContent = `${row.Nome}: ${row.Recorde} rebatidas`;
+        const destaque = index === 0 ? " 🔥" : "";
+        li.textContent = `${row.Nome}: ${row.Recorde} rebatidas${destaque}`;
         list.appendChild(li);
       });
       document.getElementById("ranking").style.display = "block";
