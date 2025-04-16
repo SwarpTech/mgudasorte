@@ -127,7 +127,7 @@
   <script>
 window.onload = function() {
   let playerName = "";
-  // REMOVIDO: let playerName duplicado
+
   fetch("https://opensheet.elk.sh/1MJj_OiIX3yTOfsOeM_LcF9je15AmqNKjjZgdy3lxqMo/Sheet1")
     .then(res => res.json())
     .then(data => {
@@ -139,6 +139,12 @@ window.onload = function() {
         li.textContent = `${row.Nome}: ${row.Recorde} rebatidas`;
         list.appendChild(li);
       });
+      document.getElementById("ranking").style.display = "block";
+    })
+    .catch(error => console.error("Erro ao carregar ranking:", error));
+
+  botaoStart.style.display = "block";
+};
       document.getElementById("ranking").style.display = "block";
     })
     .catch(error => console.error("Erro ao carregar ranking:", error));
