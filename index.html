@@ -66,7 +66,7 @@
       width: 80%;
       max-width: 300px;
     }
-    .logo { width: 80px; margin-bottom: 15px; }
+    .logo { width: 150px; margin-bottom: 15px; }
     #mensagemFinal, #mensagemDerrota { font-size: 20px; margin-top: 20px; }
     #mensagemDerrota { color: red; }
     #cupomFinal {
@@ -100,15 +100,15 @@
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
 </head>
 <body>
-  <input id="playerNameInput" type="text" placeholder="Digite seu nome" style="margin-bottom: 10px; padding: 10px; font-size: 16px; border-radius: 8px; border: none; width: 80%; max-width: 300px;" />
+  <input id="playerNameInput" type="text" placeholder="Digite seu nome (obrigatório)" style="position: fixed; top: calc(50% + 70px); left: 50%; transform: translateX(-50%); z-index: 999; padding: 10px; font-size: 16px; border-radius: 8px; border: none; width: 80%; max-width: 300px;" />
   <button id="botaoStart" class="botao-central">START</button>
   <button id="botaoAvancar" class="botao-central">Avançar de Fase</button>
   <button id="botaoNovoJogo" class="botao-central">Novo Jogo</button>
 
-  <img src="logo-mgu.png" alt="Logo MGU" class="logo">
+  <img src="logo-mgu-1.png" alt="Logo MGU" class="logo">
   <h1>MGU DA SORTE</h1>
   <p>Você já está concorrendo ao PS5! Complete a fase para ganhar um presente misterioso.</p>
-  <p><strong>Missão:</strong> Rebata a bolinha 10 vezes para completar a fase!</p>
+  <p><strong>Missão:</strong> Rebata a bolinha 10 vezes!</p>
   <p id="contadorRebates">Rebates: 0 / 10</p>
   <p id="contadorRebatesFase2">Rebates: <span id="rebatesAtuais">0</span></p>
   <p id="recordRebates">Recorde: <span id="melhorRebate">0</span></p>
@@ -126,6 +126,19 @@
 
   <script>
 window.onload = function() {
+  let playerName = "";
+  fetch("https://opensheet.elk.sh/1MJj_OiIX3yTOfsOeM_LcF9je15AmqNKjjZgdy3lxqMo/Sheet1")
+    .then(res => res.json())
+    .then(data => {
+      const sorted = data.sort((a, b) => Number(b.Recorde) - Number(a.Recorde)).slice(0, 10);
+      const list = document.getElementById("rankingList");
+      sorted.forEach(row => {
+        const li = document.createElement("li");
+        li.textContent = `${row.Nome}: ${row.Recorde} rebatidas`;
+        list.appendChild(li);
+      });
+      document.getElementById("ranking").style.display = "block";
+    });
   let playerName = "";
     // === INÍCIO DO SCRIPT JAVASCRIPT COMPLETO ===
 // === CONFIG INICIAL E VARIÁVEIS ===
@@ -461,5 +474,10 @@ function moveConfete() {
 botaoStart.style.display = "block";
 };
 </script>
+<div id="ranking" style="position: fixed; left: 20px; top: 20px; background: rgba(0,0,0,0.6); padding: 15px; border-radius: 8px; max-height: 400px; overflow-y: auto; color: #fdd760; font-size: 14px; font-family: 'Montserrat', sans-serif; display: none;">
+  <h3 style="margin-bottom: 10px; font-size: 16px;">🏆 Top Jogadores</h3>
+  <ul id="rankingList" style="list-style: none; padding: 0; margin: 0;"></ul>
+</div>
+
 </body>
 </html>
