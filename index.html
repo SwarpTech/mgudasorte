@@ -11,7 +11,7 @@
   <!-- ELEMENTOS DO JOGO -->
   <input id="playerNameInput" type="text" placeholder="Digite seu nome (obrigatório)" style="position: fixed; top: calc(50% + 70px); left: 50%; transform: translateX(-50%); z-index: 999; padding: 10px; font-size: 16px; border-radius: 8px; border: none; width: 80%; max-width: 300px;" />
   <button id="botaoStart" class="botao-central">START</button>
-  <button id="botaoAvancar" class="botao-central">Avançar de Fase</button>
+  <button id="botaoAvancar" class="botao-central">Tentar novamente</button>
   <button id="botaoNovoJogo" class="botao-central">Novo Jogo</button>
   <button id="botaoReiniciar" class="botao-central">Tentar Novamente</button>
 
@@ -26,8 +26,8 @@
   <img src="logo-mgu1.png" alt="Logo MGU" class="logo">
   <h1>MGU DA SORTE</h1>
   <p>Você já está concorrendo ao PS5! Complete a fase para ganhar um presente misterioso.</p>
-  <p><strong>Missão:</strong> Rebata a bolinha 10 vezes!</p>
-  <p id="contadorRebates">Rebates: 0 / 10</p>
+  <p><strong>Missão:</strong> Rebata a bolinha mais de 10 vezes!</p>
+  <p id="contadorRebates">Rebates: 0</p>
   <p id="contadorRebatesFase2">Rebates: <span id="rebatesAtuais">0</span></p>
   <p id="recordRebates">Recorde: <span id="melhorRebate">0</span></p>
 
@@ -43,6 +43,7 @@
 
   <div id="debugConsole"></div>
 
+  <script src="./config.js"></script>
   <script src="./script.js"></script>
 </body>
 </html>

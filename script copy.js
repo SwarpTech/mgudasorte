@@ -130,8 +130,33 @@ class RankingManager {
     }
 
     enviarRecordeParaPlanilha(nome, rebates) {
-        this.debugLog(`Enviando para planilha via POST: ${nome} com ${rebates} rebates`);
+        this.debugLog(`Enviando para planilha: ${nome} com ${rebates} rebates`);
+        const urlGET = `${this.url}?action=saveRecord&nome=${encodeURIComponent(nome)}&rebate=${rebates}`;
+        this.debugLog("URL: " + urlGET);
+        fetch(urlGET, { method: 'GET', redirect: 'follow' })
+          .then(response => {
+            if (!response.ok) throw new Error('Erro HTTP: ' + response.status);
+            return response.text();
+          })
+          .then(text => {
+            this.debugLog("Resposta do servidor: " + text);
+            try {
+              JSON.parse(text);
+              this.carregarRanking();
+            } catch {
+              this.debugLog("Resposta não é JSON, mas pode ter funcionado");
+              this.carregarRanking();
+            }
+          })
+          .catch(err => {
+            this.debugLog("Erro no GET, tentando POST...: " + err.message);
+            this.enviarComoPost(nome, rebates);
+          });
+    }
+    
+    enviarComoPost(nome, rebates) {
         const formData = new FormData();
+        formData.append('action', 'saveRecord');
         formData.append('nome', nome);
         formData.append('rebate', rebates);
         fetch(this.url, {
@@ -141,14 +166,13 @@ class RankingManager {
         })
         .then(response => response.text())
         .then(text => {
-          this.debugLog("Resposta do servidor: " + text);
+          this.debugLog("Resposta POST: " + text);
           this.carregarRanking();
         })
         .catch(err => {
-          this.debugLog("Erro ao enviar recorde: " + err.message);
+          this.debugLog("Erro no POST: " + err.message);
         });
     }
-      
 
     verificarTop3(playerName, rebates) {
         this.debugLog("Verificando TOP3 para: " + rebates + " rebates");
@@ -266,7 +290,7 @@ class Game {
 
     bindEvents() {
         this.botaoStart.addEventListener('click', () => this.startGame());
-        this.botaoAvancar.addEventListener('click', () => this.reiniciarJogo());
+        this.botaoAvancar.addEventListener('click', () => this.iniciarFase2());
         this.botaoNovoJogo.addEventListener('click', () => {
             this.emFase2 ? this.reiniciarFase2() : this.reiniciarJogo();
         });
@@ -306,8 +330,7 @@ class Game {
         this.rebounds = 0;
         this.rebatesFase2 = 0;
         this.rebatesAtuais.textContent = "0";
-        this.contadorRebates.textContent = `Rebates: ${this.rebounds}`;
-        // this.contadorRebates.textContent = `Rebates: ${this.rebounds} / ${this.goalRebounds}`;
+        this.contadorRebates.textContent = `Rebates: ${this.rebounds} / ${this.goalRebounds}`;
         this.contadorRebatesFase2.style.display = this.emFase2 ? "inline-block" : "none";
         this.recordRebates.style.display = this.emFase2 ? "inline-block" : "none";
         this.contadorRebates.style.display = this.emFase2 ? "none" : "inline-block";
@@ -435,8 +458,7 @@ class Game {
                     }
                 } else {
                     this.rebounds++;
-                    // this.contadorRebates.textContent = `Rebates: ${this.rebounds} / ${this.goalRebounds}`;
-                    this.contadorRebates.textContent = `Rebates: ${this.rebounds}`;
+                    this.contadorRebates.textContent = `Rebates: ${this.rebounds} / ${this.goalRebounds}`;
                 }
                 this.playerCollisionActive = true;
             }
@@ -455,6 +477,96 @@ class Game {
         this.draw();
     }
 
+    fase2Game() {
+        if (!this.emFase2) return;
+
+        // Verifica saída dos limites antes de processar colisões
+        if (this.ballX - this.ballRadius < 0) {
+            this.fimDeJogo(false);
+            return;
+        }
+        if (this.ballX + this.ballRadius > this.canvas.width) {
+            this.fimDeJogo(true);
+            return;
+        }
+
+        this.velocidadeExtra += this.aumentoVelocidade;
+        this.ballX += this.ballSpeedX;
+        this.ballY += this.ballSpeedY;
+
+        // Atualiza a raquete da IA sem delay (fase 2)
+        this.aiY = this.ballY - this.paddleHeight / 2;
+        this.aiY = Math.max(0, Math.min(this.canvas.height - this.paddleHeight, this.aiY));
+
+        // Colisão com as paredes superior e inferior
+        if (this.ballY + this.ballRadius > this.canvas.height || this.ballY - this.ballRadius < 0) {
+            this.ballSpeedY *= -1;
+            this.ballY = Math.max(this.ballRadius + 1, Math.min(this.canvas.height - this.ballRadius - 1, this.ballY));
+        }
+
+        // Colisão com a raquete do jogador
+        if (
+            this.ballX - this.ballRadius <= this.paddleWidth + 2 &&
+            this.ballY + this.ballRadius >= this.playerY &&
+            this.ballY - this.ballRadius <= this.playerY + this.paddleHeight &&
+            // Verifica se a bola não está muito próxima da parede superior ou inferior:
+            (this.ballY - this.ballRadius > 5 && this.ballY + this.ballRadius < this.canvas.height - 5)
+        ) {
+            if (!this.playerCollisionActive) {
+                const angle = ((this.ballY - (this.playerY + this.paddleHeight / 2)) / (this.paddleHeight / 2)) * Math.PI / 4;
+                // Use a velocidade adequada para cada fase
+                const speed = this.emFase2 
+                                ? this.ballSpeedBase + (this.velocidadeExtra += 1.0)
+                                : this.ballSpeedBase + this.rebounds * 1.0;
+                this.ballSpeedX = speed * Math.cos(angle);
+                this.ballSpeedY = speed * Math.sin(angle);
+                
+                // Incrementa a contagem somente se não estiver no caso de colisão com as paredes
+                if (this.emFase2) {
+                    this.rebatesFase2++;
+                    if (this.rebatesFase2 > 9999) this.rebatesFase2 = 9999;
+                    this.rebatesAtuais.textContent = this.rebatesFase2;
+                    if (this.rebatesFase2 > this.recordRebatesValue) {
+                        this.recordRebatesValue = this.rebatesFase2;
+                        this.recordHolderName = this.playerName;
+                        this.recordRebates.textContent = this.recordRebatesValue + " (" + this.recordHolderName + ")";
+                        localStorage.setItem('recordRebatesMGU', this.recordRebatesValue);
+                        localStorage.setItem('recordHolderNameMGU', this.recordHolderName);
+                    }
+                } else {
+                    this.rebounds++;
+                    this.contadorRebates.textContent = `Rebates: ${this.rebounds} / ${this.goalRebounds}`;
+                }
+                this.playerCollisionActive = true;
+            }
+        } else {
+            this.playerCollisionActive = false;
+        }
+
+        // Colisão com a raquete da IA
+        if (this.ballX + this.ballRadius > this.canvas.width - this.paddleWidth &&
+            this.ballY + this.ballRadius >= this.aiY &&
+            this.ballY - this.ballRadius <= this.aiY + this.paddleHeight) {
+
+            this.ballSpeedX *= -1;
+        }
+
+        this.draw();
+    }
+
+    gameLoopFase1() {
+        if (this.fimDeJogoAtivo) return;
+        this.update();
+        this.draw();
+        this.gameInterval = requestAnimationFrame(() => this.gameLoopFase1());
+    }
+
+    gameLoopFase2() {
+        if (!this.emFase2) return;
+        this.fase2Game();
+        this.gameInterval = requestAnimationFrame(() => this.gameLoopFase2());
+    }
+
     startGame() {
         this.playerName = this.playerNameInput.value.trim();
         if (!this.playerName) {
@@ -469,17 +581,47 @@ class Game {
         this.playerNameInput.style.display = "none";
         this.botaoStart.style.display = "none";
         this.canvas.style.cursor = 'none';
-        // Remova a lógica das fases
         this.emFase2 = false;
         this.initGame();
         this.gameLoopFase1();
     }
 
-    gameLoopFase1() {
-        if (this.fimDeJogoAtivo) return;
-        this.update();
-        this.draw();
-        this.gameInterval = requestAnimationFrame(() => this.gameLoopFase1());
+    iniciarFase2() {
+        if (this.gameInterval) {
+            cancelAnimationFrame(this.gameInterval);
+            this.gameInterval = null;
+        }
+        this.fimDeJogoAtivo = false;
+        this.botaoAvancar.style.display = 'none';
+        this.botaoNovoJogo.style.display = 'none';
+        this.botaoReiniciar.style.display = 'none';
+        this.canvas.style.cursor = 'none';
+        this.emFase2 = true;
+        this.velocidadeExtra = 0;
+        this.mensagemFinal.style.display = 'none';
+        this.mensagemDerrota.style.display = 'none';
+        this.contadorRebatesFase2.style.display = "inline-block";
+        this.recordRebates.style.display = "inline-block";
+        this.contadorRebates.style.display = "none";
+        this.rebatesFase2 = 0;
+        this.rebatesAtuais.textContent = "0";
+        this.initGame();
+        this.gameLoopFase2();
+    }
+
+    reiniciarFase2() {
+        if (this.gameInterval) {
+            cancelAnimationFrame(this.gameInterval);
+            this.gameInterval = null;
+        }
+        this.fimDeJogoAtivo = false;
+        this.botaoNovoJogo.style.display = 'none';
+        this.botaoReiniciar.style.display = 'none';
+        this.canvas.style.cursor = 'none';
+        this.emFase2 = true;
+        this.velocidadeExtra = 0;
+        this.initGame();
+        this.gameLoopFase2();
     }
 
     reiniciarJogo() {
@@ -511,16 +653,29 @@ class Game {
         const estavaNaFase2 = this.emFase2;
         this.emFase2 = false;
         
-        if (venceu) {
-            this.mensagemFinal.textContent = `INCRÍVEL! Você venceu com ${this.rebounds} rebatidas! 🏆`;
-            this.mensagemFinal.style.display = 'block';
-            this.confettiManager.start();
-            this.botaoNovoJogo.style.display = 'block';
-            this.rankingManager.verificarTop3(this.playerName, this.rebounds);
+        if (estavaNaFase2) {
+            if (venceu) {
+                this.mensagemFinal.textContent = `INCRÍVEL! Você venceu com ${this.rebatesFase2} rebatidas! 🏆`;
+                this.mensagemFinal.style.display = 'block';
+                this.confettiManager.start();
+                this.botaoNovoJogo.style.display = 'block';
+                this.rankingManager.verificarTop3(this.playerName, this.rebatesFase2);
+            } else {
+                this.mensagemDerrota.textContent = `Você fez ${this.rebatesFase2} rebatidas! Seu recorde: ${this.recordRebatesValue}`;
+                this.mensagemDerrota.style.display = 'block';
+                this.botaoNovoJogo.style.display = 'block';
+            }
         } else {
-            this.mensagemDerrota.textContent = `Você fez ${this.rebounds} rebatidas! Seu recorde: ${this.recordRebatesValue}`;
-            this.mensagemDerrota.style.display = 'block';
-            this.botaoNovoJogo.style.display = 'block';
+            if (venceu) {
+                this.mensagemFinal.style.display = "block";
+                this.cupomFinal.style.display = "block";
+                this.botaoAvancar.style.display = 'block';
+                this.confettiManager.start();
+            } else {
+                this.mensagemDerrota.textContent = "Você perdeu! Tente novamente para garantir seu cupom.";
+                this.mensagemDerrota.style.display = "block";
+                this.botaoReiniciar.style.display = "block";
+            }
         }
     }
 
