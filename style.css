@@ -1,0 +1,193 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+    background-color: #25262C;
+    color: #fdd760;
+    font-family: 'Montserrat', sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    height: 110vh;
+    text-align: center;
+    overflow: auto;
+    padding-top: 20px;
+}
+.game-container {
+    position: relative;
+    width: 800px;
+    height: 500px;
+    margin-bottom: 20px;
+}
+#gameCanvas, #confeteCanvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+#gameCanvas {
+    border: 4px solid #fdd760;
+    background-color: #25262C;
+    z-index: 1;
+}
+#confeteCanvas {
+    pointer-events: none;
+    z-index: 2;
+}
+h1 { margin-bottom: 10px; }
+p { margin-bottom: 22px; font-size: 18px; }
+#contadorRebates, #contadorRebatesFase2, #recordRebates {
+    font-size: 18px;
+    margin-bottom: 15px;
+    background-color: #fdd760;
+    color: #25262C;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-weight: bold;
+    display: inline-block;
+}
+#contadorRebatesFase2, #recordRebates {
+    display: none;
+    background-color: #ff6b6b;
+}
+button, #copyCupomBtn {
+    padding: 10px 20px;
+    background-color: #fdd760;
+    color: #25262C;
+    font-size: 16px;
+    font-weight: bold;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    display: none;
+    margin-top: 10px;
+    width: 80%;
+    max-width: 300px;
+}
+.logo { width: 150px; margin-bottom: 15px; }
+#mensagemFinal, #mensagemDerrota { font-size: 20px; margin-top: 20px; }
+#mensagemDerrota { color: red; }
+#cupomFinal {
+    display: none;
+    font-size: 24px;
+    font-weight: bold;
+    margin-top: 10px;
+    background-color: #fdd760;
+    color: #25262C;
+    padding: 10px 20px;
+    border-radius: 10px;
+}
+.botao-central {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 999;
+    background-color: #fdd760;
+    color: #25262C;
+    font-weight: bold;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 24px;
+    font-size: 18px;
+    cursor: pointer;
+}
+#botaoStart { display: block; }
+#botaoAvancar, #botaoNovoJogo, #botaoReiniciar { display: none; }
+#ranking {
+    position: fixed;
+    left: 20px;
+    top: 20px;
+    background: rgba(0,0,0,0.6);
+    padding: 15px;
+    border-radius: 8px;
+    max-height: 400px;
+    overflow-y: auto;
+    color: #fdd760;
+    font-size: 14px;
+    font-family: 'Montserrat', sans-serif;
+    z-index: 9999;
+}
+#ranking h2 {
+    color: #00ffcc;
+    font-size: 20px;
+    margin-bottom: 10px;
+}
+#rankingList {
+    color: #ffffff;
+    font-size: 16px;
+    line-height: 1.8;
+    font-family: monospace;
+    background: #000;
+    padding: 10px;
+    border-radius: 8px;
+}
+#rankingList div {
+    padding: 3px;
+    border-bottom: 1px solid #333;
+}
+.confete {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    background-color: #f00;
+    border-radius: 50%;
+}
+.mensagem-centralizada {
+    position: fixed;
+    top: calc(50% + 100px);
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    text-align: center;
+    width: 80%;
+    max-width: 500px;
+}
+.mensagem-top3 {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1001;
+    background-color: #fdd760;
+    color: #25262C;
+    padding: 20px;
+    border-radius: 10px;
+    text-align: center;
+    box-shadow: 0 0 20px rgba(0,0,0,0.5);
+    width: 80%;
+    max-width: 400px;
+}
+.botoes-confirmacao {
+    margin-top: 15px;
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+}
+.botoes-confirmacao button {
+    display: inline-block;
+    width: auto;
+    margin: 0;
+}
+.btn-confirmar {
+    background-color: #4CAF50 !important;
+    color: white !important;
+}
+.btn-cancelar {
+    background-color: #f44336 !important;
+    color: white !important;
+}
+#debugConsole {
+    position: fixed;
+    bottom: 10px;
+    left: 10px;
+    background: rgba(0,0,0,0.7);
+    color: #0f0;
+    padding: 10px;
+    border-radius: 5px;
+    font-family: monospace;
+    font-size: 12px;
+    z-index: 9999;
+    max-width: 300px;
+    max-height: 150px;
+    overflow: auto;
+    display: none;
+}
